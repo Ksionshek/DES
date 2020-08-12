@@ -118,6 +118,41 @@ PI_1 = [40, 8, 48, 16, 56, 24, 64, 32,
 SHIFT = [1, 1, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1]
 
 
+
+def keyGenerator():
+    #no randomowy w chuj XD
+    randomKey = []
+    randomKey = string_to_bit_array("secret_k")
+    #randomLetters = ''.join(random.choice(string.ascii_letters)
+                           # for i in range(8))
+    print("RandomKey: ")
+    print(randomKey)
+    #res = ''.join(bin(ord(c)) for c in randomLetters).replace('b', '')
+    # print(randomLetters)
+    # print(res)
+    # print(len(res))
+    permutKey = permut(randomKey, CP_1)
+    print("PermutKey: ")
+    print(permutKey)
+    # ================================   generateAndPermutKey()
+    # print(len(keyGenerator))
+    splitResL, splitResR = nsplit(permutKey, 28)
+    # print(splitResL)
+    # print('\n')
+    # print(splitResR)
+    
+    for i in range(16):
+        splitResL, splitResR = shift(splitResL, splitResR, SHIFT[i])
+        temp = splitResL + splitResR
+        subKeys.append(permut(temp, CP_2))
+    print("SubKeys: ")
+    print(subKeys)
+   
+    # for i in range(16):
+    #   print('\n', len(subKeys[i]))
+    # ================================   generateAndPermutKey()
+
+
 def nsplit(s, n):  # Split a list into sublists of size "n"
     return [s[k:k+n] for k in range(0, len(s), n)]
 
@@ -128,18 +163,6 @@ def permut(block, table):  # Permut the given block using the given table (so ge
 
 def shift(g, d, n):  # Shift a list of the given value
     return g[n:] + g[:n], d[n:] + d[:n]
-
-
-def keyGenerator():
-    randomLetters = ''.join(random.choice(string.ascii_letters)
-                            for i in range(8))
-
-    res = ''.join(bin(ord(c)) for c in randomLetters).replace('b', '')
-    # print(randomLetters)
-    # print(res)
-    # print(len(res))
-    return permut(res, CP_1)
-
 
 def string_to_bit_array(text):
     array = list()
@@ -174,7 +197,7 @@ def xor(t1, t2):  # Apply a xor and return the resulting list
     return [x ^ y for x, y in zip(t1, t2)]
 
 
-def substitute(self, d_e):  # Substitute bytes using SBOX
+def substitute(d_e):  # Substitute bytes using SBOX
     subblocks = nsplit(d_e, 6)  # Split bit array into sublist of 6 bits
     result = list()
     for i in range(len(subblocks)):  # For all the sublists
@@ -185,29 +208,12 @@ def substitute(self, d_e):  # Substitute bytes using SBOX
         column = int(''.join([str(x) for x in block[1:][:-1]]), 2)
         # Take the value in the SBOX appropriated for the round (i)
         val = S_BOX[i][row][column]
-        bin = binvalue(val, 4)  # Convert the value to binary
+        bin = binValue(val, 4)  # Convert the value to binary
         result += [int(x) for x in bin]  # And append it to the resulting list
     return result
 
 
-# ================================   generateAndPermutKey()
-keyGenerator = keyGenerator()
-# print(len(keyGenerator))
-splitResL, splitResR = nsplit(keyGenerator, 28)
-# print(splitResL)
-# print('\n')
-# print(splitResR)
 subKeys = []
-for i in range(16):
-    splitResL, splitResR = shift(splitResL, splitResR, SHIFT[i])
-    temp = splitResL + splitResR
-    subKeys.append(int(permut(temp, CP_2)))
-
-# for i in range(16):
- #   print('\n', len(subKeys[i]))
-# ================================   generateAndPermutKey()
-
-
 class Application(tk.Frame):
     def __init__(self, master=None):
         super().__init__(master)
@@ -223,22 +229,38 @@ class Application(tk.Frame):
         name.focus()
 
         def encrypt():
-            # resEncryp["text"] = "wynik"
+            keyGenerator()
             message = name.get()
             if(len(message) % 8 != 0):
                 message = addPadding(message)
 
+            result = list()
             allText = nsplit(message, 8)
             for block in allText:
                 block = string_to_bit_array(block)
                 block = permut(block, PI)
                 blockLeft, blockRight = nsplit(block, 32)
+                print("BlockLeft: ")
                 print(blockLeft)
+                print("\n")
                 for i in range(16):
                     blockRightAftPermE = permut(blockRight, E)
+                    print( "{}. BlockRightAfterPermutE:".format(i))
                     print(blockRightAftPermE)
+                    print("\n")
                     temp = xor(subKeys[i], blockRightAftPermE)
+                    print("{}. Temp: ".format(i))
                     print(temp)
+                    print("\n")
+                    temp = substitute(temp)
+                    temp = permut(temp, P)
+                    temp = xor(blockLeft, temp)
+                    blockLeft = blockRight
+                    blockRight = temp
+                result += permut(blockRight + blockLeft, PI_1)
+            final_res = bit_array_to_string(result)
+            resEncryp["text"] = final_res
+                
 
         self.hi_there = tk.Button(self)
         self.hi_there["text"] = "Tajne kodowanie"
@@ -249,7 +271,7 @@ class Application(tk.Frame):
                               command=self.master.destroy)
         self.quit.pack(side="bottom")
 
-        resEncryp = tk.Label(master=root, text="")
+        resEncryp = tk.Label(master=root, text="zaszyfrowana wiadomosc")
         resEncryp.pack()
 
 
