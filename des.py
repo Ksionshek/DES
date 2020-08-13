@@ -212,7 +212,14 @@ def substitute(d_e):  # Substitute bytes using SBOX
         bin = binValue(val, 4)  # Convert the value to binary
         result += [int(x) for x in bin]  # And append it to the resulting list
     return result
-
+    
+def check_key(key):     # in bytes 8 * 8 = 64 bits
+    if len(key) > 8:
+        key = key [:8]
+    if len(key) < 8:
+        print("key is too short")
+        exit()
+    return key
 
 subKeys = []
 window = Tk()
@@ -279,6 +286,7 @@ resEncryp = Label(frame1, text ="******", bg="#529ae3")
 resEncryp.grid(column = 1, row = 1)
 
 def decrypt():
+            
             keyGenerator()
             message = encrypt()
             if(message == ""):
@@ -287,6 +295,7 @@ def decrypt():
             if(len(message) % 8 != 0):
                 message = addPadding(message)
 
+            textPad = 8 - len(message) % 8
             result = list()
             allText = nsplit(message, 8)
             for block in allText:
@@ -312,7 +321,10 @@ def decrypt():
                     blockRight = temp
                 result += permut(blockRight + blockLeft, PI_1)
             final_res = bit_array_to_string(result)
-            resDecryp["text"] = removePadding(final_res)
+            if textPad == 8:
+                resDecryp["text"] = final_res
+            else:
+                resDecryp["text"] = removePadding(final_res)
 
 frame2 = LabelFrame(window, text="Decryption", padx=100, pady=100, bg="#bad7f5")
 frame2.pack(padx=10, pady=10) 
