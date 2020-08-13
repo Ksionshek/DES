@@ -1,5 +1,8 @@
 from tkinter import *
 from array import *
+from tkinter import messagebox
+import random
+import string
 
 CP_1 = [
     57, 49, 41, 33, 25, 17, 9,
@@ -118,20 +121,26 @@ SHIFT = [1, 1, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1]
 
 
 def keyGenerator():
-    #no randomowy w chuj XD
+   
     randomKey = []
-    randomKey = string_to_bit_array("testtest")
+    randomKey = string_to_bit_array(label0["text"])
+    if(label0["text"] == ""):
+        messagebox.showerror("ERROR", "You have to choose a key!")
+        return
+    print(label0["text"])
     #randomLetters = ''.join(random.choice(string.ascii_letters)
                            # for i in range(8))
-    print("RandomKey: ")
-    print(randomKey)
+    # print("RandomKey: ")
+    # print(randomKey)
     #res = ''.join(bin(ord(c)) for c in randomLetters).replace('b', '')
-    # print(randomLetters)
+    #print("RES")
+    #print(res)
+    #randomKey = string_to_bit_array(res)
     # print(res)
     # print(len(res))
     permutKey = permut(randomKey, CP_1)
-    print("PermutKey: ")
-    print(permutKey)
+   # print("PermutKey: ")
+    #print(permutKey)
     # ================================   generateAndPermutKey()
     # print(len(keyGenerator))
     splitResL, splitResR = nsplit(permutKey, 28)
@@ -143,8 +152,8 @@ def keyGenerator():
         splitResL, splitResR = shift(splitResL, splitResR, SHIFT[i])
         temp = splitResL + splitResR
         subKeys.append(permut(temp, CP_2))
-    print("SubKeys: ")
-    print(subKeys)
+    #print("SubKeys: ")
+    #print(subKeys)
    
     # for i in range(16):
     #   print('\n', len(subKeys[i]))
@@ -221,20 +230,41 @@ def check_key(key):     # in bytes 8 * 8 = 64 bits
         exit()
     return key
 
+def clicked(value):
+    label0["text"] =  value
+    
+
 subKeys = []
 window = Tk()
 window.title("DES")
-window.iconbitmap('des.ico')
 window.configure(bg='#90c4f5')
 
+frame0 = LabelFrame(window, text="ChooseKey", padx=100, pady=25, bg="#bad7f5")
+frame0.pack(padx=10, pady=10)
+
+MODES = [
+    #wygenerowane klucze
+    ("Key1","testtest"),
+    ("Key2","p0oiss13"),
+    ("Key3","98sstxId"),
+    ("Key4","aaV7fb13"),
+    ("Key5","Vd3o1c9Z"),
+]
+
+klucz = StringVar()
+
+for textt, mode in MODES:
+    Radiobutton(frame0,text=textt, variable = klucz, value=mode ,command=lambda:clicked(klucz.get())).pack(pady=2)
+
+label0 = Label(frame0, text=klucz.get())
+label0.pack()
 
 
-
-frame1 = LabelFrame(window, text="Encryption", padx=100, pady=100,bg="#bad7f5")
+frame1 = LabelFrame(window, text="Encryption", padx=100, pady=50,bg="#bad7f5")
 frame1.pack(padx=10, pady=10) 
 
 label1 = Label(frame1,text="This is the msg to encrypt:", bg="#529ae3")
-label1.grid(column = 0, row = 0, padx=20)
+label1.grid(column = 0, row = 1, padx=20)
 
 def encrypt():
     
@@ -249,18 +279,18 @@ def encrypt():
                 block = string_to_bit_array(block)
                 block = permut(block, PI)
                 blockLeft, blockRight = nsplit(block, 32)
-                print("BlockLeft: ")
-                print(blockLeft)
-                print("\n")
+               # print("BlockLeft: ")
+               # print(blockLeft)
+                #print("\n")
                 for i in range(16):
                     blockRightAftPermE = permut(blockRight, E)
-                    print( "{}. BlockRightAfterPermutE:".format(i))
-                    print(blockRightAftPermE)
-                    print("\n")
+                 #   print( "{}. BlockRightAfterPermutE:".format(i))
+                  #  print(blockRightAftPermE)
+                   # print("\n")
                     temp = xor(subKeys[i], blockRightAftPermE)
-                    print("{}. Temp: ".format(i))
-                    print(temp)
-                    print("\n")
+                    #print("{}. Temp: ".format(i))
+                    #print(temp)
+                    #print("\n")
                     temp = substitute(temp)
                     temp = permut(temp, P)
                     temp = xor(blockLeft, temp)
@@ -273,21 +303,21 @@ def encrypt():
             return final_res
 
 btn = Button(frame1, text="Encrypt", command=encrypt,bg="blue")
-btn.grid(column=2, row=0,padx=5, pady=5)
+btn.grid(column=2, row=1,padx=5, pady=5)
 
 
 txt = Entry(frame1, width=30, borderwidth=5, bg="#6aaceb", fg="white" )
-txt.grid(column = 1, row = 0,padx=5, pady=5)
+txt.grid(column = 1, row = 1,padx=5, pady=5)
 txt.focus()
 
 Encryp = Label(frame1, text ="Encryption result: ", bg="#529ae3") 
-Encryp.grid(column = 0, row = 1,padx=5, pady=5)
-resEncryp = Label(frame1, text ="******", bg="#529ae3") 
-resEncryp.grid(column = 1, row = 1)
+Encryp.grid(column = 0, row = 2,padx=5, pady=5)
+resEncryp = Label(frame1, text ="******", bg="#2154a1") 
+resEncryp.grid(column = 1, row = 2)
 
 def decrypt():
             
-            keyGenerator()
+            
             message = encrypt()
             if(message == ""):
                 resDecryp["text"] = "there is no msg"
@@ -302,18 +332,18 @@ def decrypt():
                 block = string_to_bit_array(block)
                 block = permut(block, PI)
                 blockLeft, blockRight = nsplit(block, 32)
-                print("BlockLeft: ")
-                print(blockLeft)
-                print("\n")
+               # print("BlockLeft: ")
+                #print(blockLeft)
+                #print("\n")
                 for i in range(16):
                     blockRightAftPermE = permut(blockRight, E)
-                    print( "{}. BlockRightAfterPermutE:".format(i))
-                    print(blockRightAftPermE)
-                    print("\n")
+                 #   print( "{}. BlockRightAfterPermutE:".format(i))
+                  #  print(blockRightAftPermE)
+                   # print("\n")
                     temp = xor(subKeys[15-i], blockRightAftPermE)
-                    print("{}. Temp: ".format(i))
-                    print(temp)
-                    print("\n")
+                    #print("{}. Temp: ".format(i))
+                    #print(temp)
+                   # print("\n")
                     temp = substitute(temp)
                     temp = permut(temp, P)
                     temp = xor(blockLeft, temp)
@@ -321,21 +351,22 @@ def decrypt():
                     blockRight = temp
                 result += permut(blockRight + blockLeft, PI_1)
             final_res = bit_array_to_string(result)
+            subKeys.clear()
             if textPad == 8:
                 resDecryp["text"] = final_res
             else:
                 resDecryp["text"] = removePadding(final_res)
 
-frame2 = LabelFrame(window, text="Decryption", padx=100, pady=100, bg="#bad7f5")
+frame2 = LabelFrame(window, text="Decryption", padx=100, pady=50, bg="#bad7f5")
 frame2.pack(padx=10, pady=10) 
 btn2 = Button(frame2, text="Decrypt", command=decrypt, bg="blue")
-btn2.grid(column=1, row=3,padx=5, pady=5)
+btn2.grid(column=1, row=4,padx=5, pady=5)
 
 Decryp = Label(frame2, text ="Decryption result", bg="#529ae3") 
-Decryp.grid(column = 0, row = 4,padx=5, pady=5)
+Decryp.grid(column = 0, row = 5,padx=5, pady=5)
 
-resDecryp = Label(frame2, text ="-----", bg="#529ae3") 
-resDecryp.grid(column = 1, row = 4,padx=5, pady=5)
+resDecryp = Label(frame2, text ="-----", bg="#2154a1") 
+resDecryp.grid(column = 1, row = 5,padx=5, pady=5)
 
 button_quit = Button(window, text="Exit", command=window.quit, bg="#ff5252", borderwidth=2)
 button_quit.pack(pady=10 )
