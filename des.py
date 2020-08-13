@@ -217,12 +217,17 @@ def substitute(d_e):  # Substitute bytes using SBOX
 subKeys = []
 window = Tk()
 window.title("DES")
-window.geometry('700x150')
+window.iconbitmap('des.ico')
+window.configure(bg='#90c4f5')
 
 
-label1 = Label(window,text="This is the msg to encrypt:")
-label1.grid(column = 0, row = 0)
 
+
+frame1 = LabelFrame(window, text="Encryption", padx=100, pady=100,bg="#bad7f5")
+frame1.pack(padx=10, pady=10) 
+
+label1 = Label(frame1,text="This is the msg to encrypt:", bg="#529ae3")
+label1.grid(column = 0, row = 0, padx=20)
 
 def encrypt():
     
@@ -260,17 +265,17 @@ def encrypt():
             resEncryp["text"] = final_res
             return final_res
 
-btn = Button(window, text="Click Me", command=encrypt,bg="blue")
-btn.grid(column=2, row=0)
+btn = Button(frame1, text="Encrypt", command=encrypt,bg="blue")
+btn.grid(column=2, row=0,padx=5, pady=5)
 
 
-txt = Entry(window, width=30)
-txt.grid(column = 1, row = 0)
+txt = Entry(frame1, width=30, borderwidth=5, bg="#6aaceb", fg="white" )
+txt.grid(column = 1, row = 0,padx=5, pady=5)
 txt.focus()
 
-Encryp = Label(window, text ="Encryption result: ") 
-Encryp.grid(column = 0, row = 1)
-resEncryp = Label(window, text ="******") 
+Encryp = Label(frame1, text ="Encryption result: ", bg="#529ae3") 
+Encryp.grid(column = 0, row = 1,padx=5, pady=5)
+resEncryp = Label(frame1, text ="******", bg="#529ae3") 
 resEncryp.grid(column = 1, row = 1)
 
 def decrypt():
@@ -278,6 +283,7 @@ def decrypt():
             message = encrypt()
             if(message == ""):
                 resDecryp["text"] = "there is no msg"
+                return
             if(len(message) % 8 != 0):
                 message = addPadding(message)
 
@@ -308,14 +314,19 @@ def decrypt():
             final_res = bit_array_to_string(result)
             resDecryp["text"] = removePadding(final_res)
 
-btn2 = Button(window, text="Click Me", command=decrypt, bg="blue")
-btn2.grid(column=1, row=2)
+frame2 = LabelFrame(window, text="Decryption", padx=100, pady=100, bg="#bad7f5")
+frame2.pack(padx=10, pady=10) 
+btn2 = Button(frame2, text="Decrypt", command=decrypt, bg="blue")
+btn2.grid(column=1, row=3,padx=5, pady=5)
 
-Decryp = Label(window, text ="Decryption result") 
-Decryp.grid(column = 0, row = 3)
+Decryp = Label(frame2, text ="Decryption result", bg="#529ae3") 
+Decryp.grid(column = 0, row = 4,padx=5, pady=5)
 
-resDecryp = Label(window, text ="******") 
-resDecryp.grid(column = 1, row = 3)
+resDecryp = Label(frame2, text ="-----", bg="#529ae3") 
+resDecryp.grid(column = 1, row = 4,padx=5, pady=5)
+
+button_quit = Button(window, text="Exit", command=window.quit, bg="#ff5252", borderwidth=2)
+button_quit.pack(pady=10 )
 
 window.mainloop()
 
