@@ -326,7 +326,7 @@ decrypt_flag = 0
 key = "testtest"
 
 
-text = "testtest"
+text = "dupakupa"
 padding = 8 - len(text) % 8
 
 crypto = encrypt_des(key,text)

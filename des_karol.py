@@ -120,9 +120,8 @@ SHIFT = [1, 1, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1]
 
 
 def keyGenerator():
-    #no randomowy w chuj XD
     randomKey = []
-    randomKey = string_to_bit_array("secret_k")
+    randomKey = string_to_bit_array("testtest")
     #randomLetters = ''.join(random.choice(string.ascii_letters)
                            # for i in range(8))
     print("RandomKey: ")
@@ -136,7 +135,7 @@ def keyGenerator():
     print(permutKey)
     # ================================   generateAndPermutKey()
     # print(len(keyGenerator))
-    splitResL, splitResR = nsplit(permutKey, 28)
+    splitResL, splitResR = splitter_28(permutKey)
     # print(splitResL)
     # print('\n')
     # print(splitResR)
@@ -153,8 +152,18 @@ def keyGenerator():
     # ================================   generateAndPermutKey()
 
 
-def nsplit(s, n):  # Split a list into sublists of size "n"
-    return [s[k:k+n] for k in range(0, len(s), n)]
+
+def splitter_8(s): # Again 8 bytes => 64 bits
+    return [s[k:k + 8] for k in range(0, len(s), 8)]
+
+def splitter_28(s): # Split for left and right parts
+    return [s[k:k + 28] for k in range(0, len(s), 28)]
+
+def splitter_32(s): # Split for left and right parts
+    return [s[k:k + 32] for k in range(0, len(s), 32)]
+
+def splitter_6(s): # Split for left and right parts
+    return [s[k:k + 6] for k in range(0, len(s), 6)]
 
 
 def permut(block, table):  # Permut the given block using the given table (so generic method)
@@ -183,38 +192,57 @@ def binValue(val, bitsize):
 
 def bit_array_to_string(array):  # Recreate the string from the bit array
     res = ''.join([chr(int(y, 2)) for y in [''.join([str(x)
-                                                     for x in _bytes]) for _bytes in nsplit(array, 8)]])
+                                                     for x in _bytes]) for _bytes in splitter_8(array)]])
     return res
 
 
-def addPadding(text):  # Add padding to the datas using PKCS5 spec.
+def addPadding(text):# Data size must be multiple of 8 bytes
     pad_len = 8 - (len(text) % 8)
-    text += pad_len * chr(pad_len)
+    for i in range (pad_len):
+        text = text + text[i]
     return text
 
 
-def xor(t1, t2):  # Apply a xor and return the resulting list
-    return [x ^ y for x, y in zip(t1, t2)]
+def removePadding(data):#Remove the padding of the plain text (it assume there is padding)
+    pad_len = ord(data[-1])
+    return data[:-pad_len]
 
 
-def substitute(d_e):  # Substitute bytes using SBOX
-    subblocks = nsplit(d_e, 6)  # Split bit array into sublist of 6 bits
-    result = list()
-    for i in range(len(subblocks)):  # For all the sublists
-        block = subblocks[i]
-        # Get the row with the first and last bit
-        row = int(str(block[0])+str(block[5]), 2)
-        # Column is the 2,3,4,5th bits
-        column = int(''.join([str(x) for x in block[1:][:-1]]), 2)
-        # Take the value in the SBOX appropriated for the round (i)
-        val = S_BOX[i][row][column]
-        bin = binValue(val, 4)  # Convert the value to binary
-        result += [int(x) for x in bin]  # And append it to the resulting list
-    return result
+def xor(s1, s2):
+    string_xor = ""
+    if len(s1) > len(s2):
+        for i in range (0,len(s1)):
+            string_xor += str(int(s1[i]) ^ int(s2[i]))
+    else:
+        for i in range (0,len(s2)):
+            string_xor += str(int(s1[i]) ^ int(s2[i]))
+    return string_xor
+
+def to_bits_4(s):
+    bit_arry = []
+    for c in str(s):
+        bits = bin(ord(c))[2:]
+        bits = '0000'[len(bits):] + bits
+        bit_arry.extend([int(b) for b in bits])
+    return bit_arry   
+
+
+def substitute(right):
+    makro_blocks = splitter_6(right)
+    res = list ()
+    for i in range(len(makro_blocks)):
+        block = makro_blocks[i]
+        line = int(str(block[0]) + str(block[5]),2)
+        column = int(''.join([str(x) for x in block[1:][:-1]]),2)
+        tmp = S_BOX[i][line][column]
+        bin = to_bits_4(tmp)
+        res += [int(x) for x in bin]
+    return res
 
 
 subKeys = []
 class Application(tk.Frame):
+  
     def __init__(self, master=None):
         super().__init__(master)
         self.master = master
@@ -235,11 +263,11 @@ class Application(tk.Frame):
                 message = addPadding(message)
 
             result = list()
-            allText = nsplit(message, 8)
+            allText = splitter_8(message)
             for block in allText:
                 block = string_to_bit_array(block)
                 block = permut(block, PI)
-                blockLeft, blockRight = nsplit(block, 32)
+                blockLeft, blockRight = splitter_32(block)
                 print("BlockLeft: ")
                 print(blockLeft)
                 print("\n")
@@ -260,21 +288,73 @@ class Application(tk.Frame):
                 result += permut(blockRight + blockLeft, PI_1)
             final_res = bit_array_to_string(result)
             resEncryp["text"] = final_res
+            return final_res
+
+        def decrypt():
+            
+            message = encrypt()
+            textPad = 8 - len(message) % 8
+            if(message == ""):
+                #resDecryp["text"] = "there is no msg"
+                print("There is no msg")
+                return
+            if(len(message) % 8 != 0):
+                message = addPadding(message)
+
+            result = list()
+            allText = splitter_8(message)
+            for block in allText:
+                block = string_to_bit_array(block)
+                block = permut(block, PI)
+                blockLeft, blockRight = splitter_32(block)
+                print("BlockLeft: ")
+                print(blockLeft)
+                print("\n")
+                for i in range(16):
+                    blockRightAftPermE = permut(blockRight, E)
+                    print( "{}. BlockRightAfterPermutE:".format(i))
+                    print(blockRightAftPermE)
+                    print("\n")
+                    temp = xor(subKeys[15-i], blockRightAftPermE)
+                    print("{}. Temp: ".format(i))
+                    print(temp)
+                    print("\n")
+                    temp = substitute(temp)
+                    temp = permut(temp, P)
+                    temp = xor(blockLeft, temp)
+                    blockLeft = blockRight
+                    blockRight = temp
+                result += permut(blockRight + blockLeft, PI_1)
+            final_res = bit_array_to_string(result)
+            if textPad == 8:
+                resDecryp["text"] = final_res
+                print(final_res)
+            else:
+                resDecryp["text"] = removePadding(final_res)
+                print(removePadding(final_res))
                 
 
         self.hi_there = tk.Button(self)
         self.hi_there["text"] = "Tajne kodowanie"
         self.hi_there["command"] = encrypt
-        self.hi_there.pack(side="top")
+        self.hi_there.pack(padx=5, pady=5)
+
+        self.decryptt = tk.Button(self, text = "Decrypt", command= decrypt,bg="blue")
+        self.decryptt.pack(padx=10, pady=10)
+
 
         self.quit = tk.Button(self, text="QUIT", fg="red",
                               command=self.master.destroy)
         self.quit.pack(side="bottom")
 
         resEncryp = tk.Label(master=root, text="zaszyfrowana wiadomosc")
-        resEncryp.pack()
+        resEncryp.pack(padx=5, pady=5)
+
+        resDecryp = tk.Label(master=root, text="odszyfrowana wiadomosc")
+        resDecryp.pack(padx=5, pady=5)
 
 
 root = tk.Tk()
+root.title("DES - Karol Kaznowski")
 app = Application(master=root)
 app.mainloop()
