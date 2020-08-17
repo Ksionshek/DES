@@ -1,29 +1,45 @@
-import tkinter as tk
+from tkinter import *
 import string
 import random
 from struct import unpack
+from tkinter import messagebox as msb
 
-CP_1 = [
-    57, 49, 41, 33, 25, 17, 9,
-    1, 58, 50, 42, 34, 26, 18,
-    10, 2, 59, 51, 43, 35, 27,
-    19, 11, 3, 60, 52, 44, 36,
-    63, 55, 47, 39, 31, 23, 15,
-    7, 62, 54, 46, 38, 30, 22,
-    14, 6, 61, 53, 45, 37, 29,
-    21, 13, 5, 28, 20, 12, 4
+# ==========
+# Array for generated subkeys
+# ==========
+subKeyArray = []
+
+# ==========
+# Initial Permutation
+# ==========
+InitialPermutationArray = [
+    58, 50, 42, 34, 26, 18, 10, 2,
+    60, 52, 44, 36, 28, 20, 12, 4,
+    62,	54,	46,	38,	30,	22,	14,	6,
+    64, 56, 48, 40, 32, 24, 16, 8,
+    57,	49,	41,	33,	25,	17,	 9, 1,
+    59, 51, 43, 35, 27, 19, 11, 3,
+    61,	53,	45,	37,	29,	21,	13,	5,
+    63, 55, 47, 39, 31, 23, 15, 7
 ]
 
-CP_2 = [
-    14, 17, 11, 24, 1, 5, 3, 28,
-    15, 6, 21, 10, 23, 19, 12, 4,
-    26, 8, 16, 7, 27, 20, 13, 2,
-    41, 52, 31, 37, 47, 55, 30, 40,
-    51, 45, 33, 48, 44, 49, 39, 56,
-    34, 53, 46, 42, 50, 36, 29, 32
+# ==========
+# Final Permutation
+# ==========
+FinalPermutationArray = [
+    40, 8, 48, 16, 56, 24, 64, 32,
+    39, 7, 47, 15, 55, 23, 63, 31,
+    38, 6, 46, 14, 54, 22, 62, 30,
+    37, 5, 45, 13, 53, 21, 61, 29,
+    36, 4, 44, 12, 52, 20, 60, 28,
+    35, 3, 43, 11, 51, 19, 59, 27,
+    34, 2, 42, 10, 50, 18, 58, 26,
+    33, 1, 41, 9, 49, 17, 57, 25
 ]
 
-# Expand matrix to get a 48bits matrix of datas to apply the xor with Ki
+# ==========
+# Expansion E
+# ==========
 E = [
     32, 1, 2, 3, 4, 5,
     4, 5, 6, 7, 8, 9,
@@ -35,326 +51,344 @@ E = [
     28, 29, 30, 31, 32, 1
 ]
 
-# SBOX
+# ==========
+# S-Boxes
+# ==========
 S_BOX = [
-
-    [[14, 4, 13, 1, 2, 15, 11, 8, 3, 10, 6, 12, 5, 9, 0, 7],
-     [0, 15, 7, 4, 14, 2, 13, 1, 10, 6, 12, 11, 9, 5, 3, 8],
+    [
+        [14, 4, 13, 1, 2, 15, 11, 8, 3, 10, 6, 12, 5, 9, 0, 7],
+        [0, 15, 7, 4, 14, 2, 13, 1, 10, 6, 12, 11, 9, 5, 3, 8],
         [4, 1, 14, 8, 13, 6, 2, 11, 15, 12, 9, 7, 3, 10, 5, 0],
         [15, 12, 8, 2, 4, 9, 1, 7, 5, 11, 3, 14, 10, 0, 6, 13],
-     ],
+    ],
 
-    [[15, 1, 8, 14, 6, 11, 3, 4, 9, 7, 2, 13, 12, 0, 5, 10],
-     [3, 13, 4, 7, 15, 2, 8, 14, 12, 0, 1, 10, 6, 9, 11, 5],
+    [
+        [15, 1, 8, 14, 6, 11, 3, 4, 9, 7, 2, 13, 12, 0, 5, 10],
+        [3, 13, 4, 7, 15, 2, 8, 14, 12, 0, 1, 10, 6, 9, 11, 5],
         [0, 14, 7, 11, 10, 4, 13, 1, 5, 8, 12, 6, 9, 3, 2, 15],
         [13, 8, 10, 1, 3, 15, 4, 2, 11, 6, 7, 12, 0, 5, 14, 9],
-     ],
+    ],
 
-    [[10, 0, 9, 14, 6, 3, 15, 5, 1, 13, 12, 7, 11, 4, 2, 8],
-     [13, 7, 0, 9, 3, 4, 6, 10, 2, 8, 5, 14, 12, 11, 15, 1],
+    [
+        [10, 0, 9, 14, 6, 3, 15, 5, 1, 13, 12, 7, 11, 4, 2, 8],
+        [13, 7, 0, 9, 3, 4, 6, 10, 2, 8, 5, 14, 12, 11, 15, 1],
         [13, 6, 4, 9, 8, 15, 3, 0, 11, 1, 2, 12, 5, 10, 14, 7],
         [1, 10, 13, 0, 6, 9, 8, 7, 4, 15, 14, 3, 11, 5, 2, 12],
-     ],
+    ],
 
-    [[7, 13, 14, 3, 0, 6, 9, 10, 1, 2, 8, 5, 11, 12, 4, 15],
-     [13, 8, 11, 5, 6, 15, 0, 3, 4, 7, 2, 12, 1, 10, 14, 9],
+    [
+        [7, 13, 14, 3, 0, 6, 9, 10, 1, 2, 8, 5, 11, 12, 4, 15],
+        [13, 8, 11, 5, 6, 15, 0, 3, 4, 7, 2, 12, 1, 10, 14, 9],
         [10, 6, 9, 0, 12, 11, 7, 13, 15, 1, 3, 14, 5, 2, 8, 4],
         [3, 15, 0, 6, 10, 1, 13, 8, 9, 4, 5, 11, 12, 7, 2, 14],
-     ],
+    ],
 
-    [[2, 12, 4, 1, 7, 10, 11, 6, 8, 5, 3, 15, 13, 0, 14, 9],
-     [14, 11, 2, 12, 4, 7, 13, 1, 5, 0, 15, 10, 3, 9, 8, 6],
+    [
+        [2, 12, 4, 1, 7, 10, 11, 6, 8, 5, 3, 15, 13, 0, 14, 9],
+        [14, 11, 2, 12, 4, 7, 13, 1, 5, 0, 15, 10, 3, 9, 8, 6],
         [4, 2, 1, 11, 10, 13, 7, 8, 15, 9, 12, 5, 6, 3, 0, 14],
         [11, 8, 12, 7, 1, 14, 2, 13, 6, 15, 0, 9, 10, 4, 5, 3],
-     ],
+    ],
 
-    [[12, 1, 10, 15, 9, 2, 6, 8, 0, 13, 3, 4, 14, 7, 5, 11],
-     [10, 15, 4, 2, 7, 12, 9, 5, 6, 1, 13, 14, 0, 11, 3, 8],
+    [
+        [12, 1, 10, 15, 9, 2, 6, 8, 0, 13, 3, 4, 14, 7, 5, 11],
+        [10, 15, 4, 2, 7, 12, 9, 5, 6, 1, 13, 14, 0, 11, 3, 8],
         [9, 14, 15, 5, 2, 8, 12, 3, 7, 0, 4, 10, 1, 13, 11, 6],
         [4, 3, 2, 12, 9, 5, 15, 10, 11, 14, 1, 7, 6, 0, 8, 13],
-     ],
+    ],
 
-    [[4, 11, 2, 14, 15, 0, 8, 13, 3, 12, 9, 7, 5, 10, 6, 1],
-     [13, 0, 11, 7, 4, 9, 1, 10, 14, 3, 5, 12, 2, 15, 8, 6],
+    [
+        [4, 11, 2, 14, 15, 0, 8, 13, 3, 12, 9, 7, 5, 10, 6, 1],
+        [13, 0, 11, 7, 4, 9, 1, 10, 14, 3, 5, 12, 2, 15, 8, 6],
         [1, 4, 11, 13, 12, 3, 7, 14, 10, 15, 6, 8, 0, 5, 9, 2],
         [6, 11, 13, 8, 1, 4, 10, 7, 9, 5, 0, 15, 14, 2, 3, 12],
-     ],
+    ],
 
-    [[13, 2, 8, 4, 6, 15, 11, 1, 10, 9, 3, 14, 5, 0, 12, 7],
-     [1, 15, 13, 8, 10, 3, 7, 4, 12, 5, 6, 11, 0, 14, 9, 2],
+    [
+        [13, 2, 8, 4, 6, 15, 11, 1, 10, 9, 3, 14, 5, 0, 12, 7],
+        [1, 15, 13, 8, 10, 3, 7, 4, 12, 5, 6, 11, 0, 14, 9, 2],
         [7, 11, 4, 1, 9, 12, 14, 2, 0, 6, 10, 13, 15, 3, 5, 8],
         [2, 1, 14, 7, 4, 10, 8, 13, 15, 12, 9, 0, 3, 5, 6, 11],
-     ]
+    ]
 ]
 
-# Permut made after each SBox substitution for each round
-P = [16, 7, 20, 21, 29, 12, 28, 17,
-     1, 15, 23, 26, 5, 18, 31, 10,
-     2, 8, 24, 14, 32, 27, 3, 9,
-     19, 13, 30, 6, 22, 11, 4, 25]
-
-PI = [
-    58, 50, 42, 34, 26, 18, 10, 2,
-    60, 52, 44, 36, 28, 20, 12, 4,
-    62,	54,	46,	38,	30,	22,	14,	6,
-    64, 56, 48, 40, 32, 24, 16, 8,
-    57,	49,	41,	33,	25,	17,	 9, 1,
-    59, 51, 43, 35, 27, 19, 11, 3,
-    61,	53,	45,	37,	29,	21,	13,	5,
-    63, 55, 47, 39, 31, 23, 15, 7
+# ==========
+# Permutation P
+# ==========
+P = [
+    16, 7, 20, 21, 29, 12, 28, 17,
+    1, 15, 23, 26, 5, 18, 31, 10,
+    2, 8, 24, 14, 32, 27, 3, 9,
+    19, 13, 30, 6, 22, 11, 4, 25
 ]
 
-# Final permut for datas after the 16 rounds
-PI_1 = [40, 8, 48, 16, 56, 24, 64, 32,
-        39, 7, 47, 15, 55, 23, 63, 31,
-        38, 6, 46, 14, 54, 22, 62, 30,
-        37, 5, 45, 13, 53, 21, 61, 29,
-        36, 4, 44, 12, 52, 20, 60, 28,
-        35, 3, 43, 11, 51, 19, 59, 27,
-        34, 2, 42, 10, 50, 18, 58, 26,
-        33, 1, 41, 9, 49, 17, 57, 25]
+# ==========
+# Permuted choice (PC1)
+# ==========
+PC_1 = [
+    57, 49, 41, 33, 25, 17, 9,
+    1, 58, 50, 42, 34, 26, 18,
+    10, 2, 59, 51, 43, 35, 27,
+    19, 11, 3, 60, 52, 44, 36,
+    63, 55, 47, 39, 31, 23, 15,
+    7, 62, 54, 46, 38, 30, 22,
+    14, 6, 61, 53, 45, 37, 29,
+    21, 13, 5, 28, 20, 12, 4
+]
 
-# Matrix that determine the shift for each round of keys
-SHIFT = [1, 1, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1]
+# ==========
+# Permuted choice (PC2)
+# ==========
+PC_2 = [
+    14, 17, 11, 24, 1, 5, 3, 28,
+    15, 6, 21, 10, 23, 19, 12, 4,
+    26, 8, 16, 7, 27, 20, 13, 2,
+    41, 52, 31, 37, 47, 55, 30, 40,
+    51, 45, 33, 48, 44, 49, 39, 56,
+    34, 53, 46, 42, 50, 36, 29, 32
+]
 
+# ==========
+# Number of Left Shift
+# ==========
+ShiftArray = [1, 1, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1]
 
 
 def keyGenerator():
-    randomKey = []
-    randomKey = string_to_bit_array("testtest")
-    #randomLetters = ''.join(random.choice(string.ascii_letters)
-                           # for i in range(8))
-    print("RandomKey: ")
-    print(randomKey)
-    #res = ''.join(bin(ord(c)) for c in randomLetters).replace('b', '')
-    # print(randomLetters)
-    # print(res)
-    # print(len(res))
-    permutKey = permut(randomKey, CP_1)
-    print("PermutKey: ")
-    print(permutKey)
-    # ================================   generateAndPermutKey()
-    # print(len(keyGenerator))
-    splitResL, splitResR = splitter_28(permutKey)
-    # print(splitResL)
-    # print('\n')
-    # print(splitResR)
-    
+    randomLetters = []
+    randomLetters = ''.join(random.choice(string.ascii_letters)
+                            for i in range(8))
+
+    randomLetters = ''.join(bin(ord(c))
+                            for c in randomLetters).replace('b', '')
+
+    permutResult = permutation(randomLetters, PC_1)
+
+    leftPart, rightPart = splitter_28(permutResult)
+
     for i in range(16):
-        splitResL, splitResR = shift(splitResL, splitResR, SHIFT[i])
-        temp = splitResL + splitResR
-        subKeys.append(permut(temp, CP_2))
-    print("SubKeys: ")
-    print(subKeys)
-   
-    # for i in range(16):
-    #   print('\n', len(subKeys[i]))
-    # ================================   generateAndPermutKey()
+        leftPart, rightPart = shift(leftPart, rightPart, ShiftArray[i])
+        margedPart = leftPart + rightPart
+        subKeyArray.append(permutation(margedPart, PC_2))
 
 
+# ==========
+# Splitter functions
+# ==========
 
-def splitter_8(s): # Again 8 bytes => 64 bits
+def splitter_8(s):
     return [s[k:k + 8] for k in range(0, len(s), 8)]
 
-def splitter_28(s): # Split for left and right parts
+
+def splitter_28(s):
     return [s[k:k + 28] for k in range(0, len(s), 28)]
 
-def splitter_32(s): # Split for left and right parts
+
+def splitter_32(s):
     return [s[k:k + 32] for k in range(0, len(s), 32)]
 
-def splitter_6(s): # Split for left and right parts
+
+def splitter_6(s):
     return [s[k:k + 6] for k in range(0, len(s), 6)]
 
 
-def permut(block, table):  # Permut the given block using the given table (so generic method)
-    return [block[x-1] for x in table]
+def permutation(block, array):
+    return [block[x-1] for x in array]
 
 
-def shift(g, d, n):  # Shift a list of the given value
+def shift(g, d, n):
     return g[n:] + g[:n], d[n:] + d[:n]
 
-def string_to_bit_array(text):
-    array = list()
-    for char in text:
-        binval = binValue(char, 8)
-        array.extend([int(x) for x in list(binval)])
-    return array
 
-
-def binValue(val, bitsize):
-    binval = bin(val)[2:] if isinstance(val, int) else bin(ord(val))[2:]
-    if len(binval) > bitsize:
-        raise "binary value larger than the expected size"
-    while len(binval) < bitsize:
-        binval = "0"+binval  # Add as many 0 as needed to get the wanted size
-    return binval
-
-
-def bit_array_to_string(array):  # Recreate the string from the bit array
-    res = ''.join([chr(int(y, 2)) for y in [''.join([str(x)
-                                                     for x in _bytes]) for _bytes in splitter_8(array)]])
-    return res
-
-
-def addPadding(text):# Data size must be multiple of 8 bytes
-    pad_len = 8 - (len(text) % 8)
-    for i in range (pad_len):
-        text = text + text[i]
+def addPadding(text):
+    paddingLen = 8 - (len(text) % 8)
+    for i in range(paddingLen):
+        text += text[i]
     return text
 
 
-def removePadding(data):#Remove the padding of the plain text (it assume there is padding)
-    pad_len = ord(data[-1])
-    return data[:-pad_len]
+def removePadding(text, len):
+    return text[:-len]
 
 
 def xor(s1, s2):
-    string_xor = ""
+    stringXOR = ""
     if len(s1) > len(s2):
-        for i in range (0,len(s1)):
-            string_xor += str(int(s1[i]) ^ int(s2[i]))
+        for i in range(0, len(s1)):
+            stringXOR += str(int(s1[i]) ^ int(s2[i]))
     else:
-        for i in range (0,len(s2)):
-            string_xor += str(int(s1[i]) ^ int(s2[i]))
-    return string_xor
-
-def to_bits_4(s):
-    bit_arry = []
-    for c in str(s):
-        bits = bin(ord(c))[2:]
-        bits = '0000'[len(bits):] + bits
-        bit_arry.extend([int(b) for b in bits])
-    return bit_arry   
+        for i in range(0, len(s2)):
+            stringXOR += str(int(s1[i]) ^ int(s2[i]))
+    return stringXOR
 
 
 def substitute(right):
-    makro_blocks = splitter_6(right)
-    res = list ()
-    for i in range(len(makro_blocks)):
-        block = makro_blocks[i]
-        line = int(str(block[0]) + str(block[5]),2)
-        column = int(''.join([str(x) for x in block[1:][:-1]]),2)
+    makroBlocks = splitter_6(right)
+    result = []
+    for i in range(len(makroBlocks)):
+        block = makroBlocks[i]
+        line = int(str(block[0]) + str(block[5]), 2)
+        column = int(''.join([str(x) for x in block[1:][:-1]]), 2)
         tmp = S_BOX[i][line][column]
-        bin = to_bits_4(tmp)
-        res += [int(x) for x in bin]
-    return res
+        bitArray = convertToBits_4(tmp)
+        result += [int(x) for x in bitArray]
+    return result
 
 
-subKeys = []
-class Application(tk.Frame):
-  
+def convertToBits(s):
+    bitArray = []
+    for c in s:
+        bits = bin(ord(c))[2:]
+        bits = '00000000'[len(bits):] + bits
+        bitArray.extend([int(b) for b in bits])
+    return bitArray
+
+
+def convertToBits_4(s):
+    bitArray = []
+    for c in str(s):
+        bits = bin(ord(c))[2:]
+        bits = '0000'[len(bits):] + bits
+        bitArray.extend([int(b) for b in bits])
+    return bitArray
+
+
+class Application(Frame):
+
     def __init__(self, master=None):
         super().__init__(master)
         self.master = master
         self.pack()
-        self.create_widgets()
+        self.createWidgets()
 
-    def create_widgets(self):
-        tk.Label(
-            root, text="Podaj slowo do zaszyfrowania:").pack()
-        name = tk.Entry(root, width=40)
-        name.pack()
-        name.focus()
+    def createWidgets(self):
 
         def encrypt():
             keyGenerator()
             message = name.get()
-            if(len(message) % 8 != 0):
-                message = addPadding(message)
 
-            result = list()
-            allText = splitter_8(message)
-            for block in allText:
-                block = string_to_bit_array(block)
-                block = permut(block, PI)
-                blockLeft, blockRight = splitter_32(block)
-                print("BlockLeft: ")
-                print(blockLeft)
-                print("\n")
-                for i in range(16):
-                    blockRightAftPermE = permut(blockRight, E)
-                    print( "{}. BlockRightAfterPermutE:".format(i))
-                    print(blockRightAftPermE)
-                    print("\n")
-                    temp = xor(subKeys[i], blockRightAftPermE)
-                    print("{}. Temp: ".format(i))
-                    print(temp)
-                    print("\n")
-                    temp = substitute(temp)
-                    temp = permut(temp, P)
-                    temp = xor(blockLeft, temp)
-                    blockLeft = blockRight
-                    blockRight = temp
-                result += permut(blockRight + blockLeft, PI_1)
-            final_res = bit_array_to_string(result)
-            resEncryp["text"] = final_res
-            return final_res
+            if(message == ""):
+                msb.showinfo(
+                    "Empty input field", "Please input filed and then click on Encrypt button")
+            else:
+                self.decryptButton['state'] = 'normal'
+
+                if(len(message) % 8):
+                    message = addPadding(message)
+
+                result = []
+                allText = splitter_8(message)
+
+                for block in allText:
+
+                    block = ''.join(bin(ord(c))
+                                    for c in block).replace('b', '')
+                    block = permutation(block, InitialPermutationArray)
+                    blockLeft, blockRight = splitter_32(block)
+
+                    for i in range(16):
+                        blockRightAftPermE = permutation(blockRight, E)
+
+                        temp = xor(subKeyArray[i], blockRightAftPermE)
+                        temp = substitute(temp)
+                        temp = permutation(temp, P)
+                        temp = xor(blockLeft, temp)
+                        blockLeft = blockRight
+                        blockRight = temp
+
+                    result += permutation(blockRight + blockLeft,
+                                          FinalPermutationArray)
+
+                encryptOutput["text"] = ''.join([chr(int(y, 2)) for y in [''.join([str(x)
+                                                                                   for x in _bytes]) for _bytes in splitter_8(result)]])
 
         def decrypt():
-            
-            message = encrypt()
-            textPad = 8 - len(message) % 8
-            if(message == ""):
-                #resDecryp["text"] = "there is no msg"
-                print("There is no msg")
-                return
-            if(len(message) % 8 != 0):
-                message = addPadding(message)
 
-            result = list()
-            allText = splitter_8(message)
-            for block in allText:
-                block = string_to_bit_array(block)
-                block = permut(block, PI)
-                blockLeft, blockRight = splitter_32(block)
-                print("BlockLeft: ")
-                print(blockLeft)
-                print("\n")
-                for i in range(16):
-                    blockRightAftPermE = permut(blockRight, E)
-                    print( "{}. BlockRightAfterPermutE:".format(i))
-                    print(blockRightAftPermE)
-                    print("\n")
-                    temp = xor(subKeys[15-i], blockRightAftPermE)
-                    print("{}. Temp: ".format(i))
-                    print(temp)
-                    print("\n")
-                    temp = substitute(temp)
-                    temp = permut(temp, P)
-                    temp = xor(blockLeft, temp)
-                    blockLeft = blockRight
-                    blockRight = temp
-                result += permut(blockRight + blockLeft, PI_1)
-            final_res = bit_array_to_string(result)
-            if textPad == 8:
-                resDecryp["text"] = final_res
-                print(final_res)
+            inputMessage = name.get()
+            message = encryptOutput["text"]
+
+            if(inputMessage == ""):
+                msb.showinfo(
+                    "Empty input field", "Please input filed and then click on Encrypt button")
             else:
-                resDecryp["text"] = removePadding(final_res)
-                print(removePadding(final_res))
-                
+                result = list()
 
-        self.hi_there = tk.Button(self)
-        self.hi_there["text"] = "Tajne kodowanie"
-        self.hi_there["command"] = encrypt
-        self.hi_there.pack(padx=5, pady=5)
+                allText = splitter_8(message)
 
-        self.decryptt = tk.Button(self, text = "Decrypt", command= decrypt,bg="blue")
-        self.decryptt.pack(padx=10, pady=10)
+                for block in allText:
+                    block = convertToBits(block)
+                    block = permutation(block, InitialPermutationArray)
+                    blockLeft, blockRight = splitter_32(block)
+
+                    for i in range(16):
+                        blockRightAftPermE = permutation(blockRight, E)
+
+                        temp = xor(subKeyArray[15-i], blockRightAftPermE)
+                        temp = substitute(temp)
+                        temp = permutation(temp, P)
+                        temp = xor(blockLeft, temp)
+                        blockLeft = blockRight
+                        blockRight = temp
+
+                    result += permutation(blockRight + blockLeft,
+                                          FinalPermutationArray)
+
+                final_res = ''.join([chr(int(y, 2)) for y in [''.join([str(x)
+                                                                       for x in _bytes]) for _bytes in splitter_8(result)]])
+
+                inputMessageLen = len(inputMessage) % 8
+                decryptOutput["text"] = removePadding(
+                    final_res, 8 - inputMessageLen)
 
 
-        self.quit = tk.Button(self, text="QUIT", fg="red",
-                              command=self.master.destroy)
-        self.quit.pack(side="bottom")
+# ======== GUI
+        leftSide = Frame(self)
+        leftSide.pack(side=LEFT, expand=True, fill=BOTH,
+                      ipadx=10, ipady=10, padx=10, pady=10)
 
-        resEncryp = tk.Label(master=root, text="zaszyfrowana wiadomosc")
-        resEncryp.pack(padx=5, pady=5)
+        rightSide = Frame(self)
+        rightSide.pack(side=RIGHT, expand=True, fill=BOTH,
+                       ipadx=10, ipady=10, padx=10, pady=10)
 
-        resDecryp = tk.Label(master=root, text="odszyfrowana wiadomosc")
-        resDecryp.pack(padx=5, pady=5)
+# input message
+        self.label = Label(
+            leftSide, text="Input string to encrypt:", font=("Helvetica", 16), borderwidth="5", relief="groove")
+        self.label.pack(side=TOP, expand=True, fill=BOTH, pady=10, ipady=10)
+
+        name = Entry(rightSide, width=20, font=("Helvetica", 16),
+                     borderwidth="5", relief="groove")
+        name.pack(side=TOP, expand=True, fill=BOTH, pady=10)
+        name.focus()
+
+# encrypt
+        self.encryptButton = Button(
+            leftSide, text="Encrypt", command=encrypt, borderwidth="5", cursor="hand2", font=("Helvetica", 16))
+        self.encryptButton.pack(side=TOP, expand=True,
+                                fill=BOTH, pady=10)
+
+        encryptOutput = Label(master=rightSide,
+                              text="Output for encrypt", font=("Helvetica", 16), bg="blue", fg="white")
+        encryptOutput.pack(side=TOP, expand=True, fill=BOTH, pady=10)
+
+# decrypt
+        self.decryptButton = Button(
+            leftSide, text="Decrypt", command=decrypt, borderwidth="5", cursor="hand2", font=("Helvetica", 16), state=DISABLED)
+        self.decryptButton.pack(side=TOP, expand=True, fill=BOTH, pady=10)
+
+        decryptOutput = Label(rightSide, text="Output for decrypt",
+                              font=("Helvetica", 16), bg="red", fg="white")
+        decryptOutput.pack(side=TOP, expand=True, fill=BOTH, pady=10)
+
+# QUIT
+        quitFrame = Frame(self)
+        quitFrame.pack(side=BOTTOM, expand=True, fill=BOTH)
+
+        self.quit = Button(quitFrame, text="QUIT", fg="red", font=("Helvetica", 11, 'bold'),
+                           command=self.master.destroy, cursor="X_cursor")
+        self.quit.pack(side=TOP, expand=True, fill=BOTH)
 
 
-root = tk.Tk()
+root = Tk()
 root.title("DES - Karol Kaznowski")
 app = Application(master=root)
 app.mainloop()
