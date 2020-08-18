@@ -230,12 +230,12 @@ def substitute(right):
         line = int(str(block[0]) + str(block[5]), 2)
         column = int(''.join([str(x) for x in block[1:][:-1]]), 2)
         tmp = S_BOX[i][line][column]
-        bitArray = convertToBits_4(tmp)
+        bitArray = convertToBitArray_4(tmp)
         result += [int(x) for x in bitArray]
     return result
 
 
-def convertToBits(s):
+def convertToBitArray(s):
     bitArray = []
     for c in s:
         bits = bin(ord(c))[2:]
@@ -244,13 +244,25 @@ def convertToBits(s):
     return bitArray
 
 
-def convertToBits_4(s):
+def convertToBitArray_4(s):
     bitArray = []
     for c in str(s):
         bits = bin(ord(c))[2:]
         bits = '0000'[len(bits):] + bits
         bitArray.extend([int(b) for b in bits])
     return bitArray
+
+
+def convertToBits(block):
+    tempBlock = []
+    for c in block:
+
+        if(c.isspace()):
+            tempBlock += "0" + bin(ord(c)).replace('b', '')
+        else:
+            tempBlock += bin(ord(c)).replace('b', '')
+
+    return tempBlock
 
 
 class Application(Frame):
@@ -269,20 +281,19 @@ class Application(Frame):
 
             if(message == ""):
                 msb.showinfo(
-                    "Empty input field", "Please input filed and then click on Encrypt button")
+                    "Empty input field", "Please fill in the empty field and click on Encrypt button!")
             else:
                 self.decryptButton['state'] = 'normal'
 
                 if(len(message) % 8):
                     message = addPadding(message)
-
+                
                 result = []
                 allText = splitter_8(message)
-
+                
                 for block in allText:
-
-                    block = ''.join(bin(ord(c))
-                                    for c in block).replace('b', '')
+                    
+                    block = convertToBits(block)
                     block = permutation(block, InitialPermutationArray)
                     blockLeft, blockRight = splitter_32(block)
 
@@ -293,6 +304,7 @@ class Application(Frame):
                         temp = substitute(temp)
                         temp = permutation(temp, P)
                         temp = xor(blockLeft, temp)
+                        
                         blockLeft = blockRight
                         blockRight = temp
 
@@ -309,14 +321,14 @@ class Application(Frame):
 
             if(inputMessage == ""):
                 msb.showinfo(
-                    "Empty input field", "Please input filed and then click on Encrypt button")
+                    "Empty input field", "Please fill in the empty field and click on Encrypt button!")
             else:
                 result = list()
 
                 allText = splitter_8(message)
 
                 for block in allText:
-                    block = convertToBits(block)
+                    block = convertToBitArray(block)
                     block = permutation(block, InitialPermutationArray)
                     blockLeft, blockRight = splitter_32(block)
 
@@ -327,18 +339,28 @@ class Application(Frame):
                         temp = substitute(temp)
                         temp = permutation(temp, P)
                         temp = xor(blockLeft, temp)
+
                         blockLeft = blockRight
                         blockRight = temp
 
                     result += permutation(blockRight + blockLeft,
                                           FinalPermutationArray)
 
-                final_res = ''.join([chr(int(y, 2)) for y in [''.join([str(x)
-                                                                       for x in _bytes]) for _bytes in splitter_8(result)]])
+                finalResult = ''.join([chr(int(y, 2)) for y in [''.join([str(x)
+                                                                         for x in _bytes]) for _bytes in splitter_8(result)]])
 
                 inputMessageLen = len(inputMessage) % 8
-                decryptOutput["text"] = removePadding(
-                    final_res, 8 - inputMessageLen)
+                if inputMessageLen != 0:
+                    finalResult = removePadding(
+                        finalResult, 8 - inputMessageLen)
+
+                if(inputMessage == finalResult):
+                    decryptOutput["text"] = finalResult
+                else:
+                    msb.showinfo(
+                        "Different messages", "Encrypted message and Decrypted message are different!\n\nPlease fill in the empty field and click on Encrypt button!")
+
+                self.decryptButton['state'] = 'disable'
 
 
 # ======== GUI
