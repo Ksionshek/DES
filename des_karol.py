@@ -256,11 +256,11 @@ def convertToBitArray_4(s):
 def convertToBits(block):
     tempBlock = []
     for c in block:
-
-        if(c.isspace()):
-            tempBlock += "0" + bin(ord(c)).replace('b', '')
+        binResult = bin(ord(c)).replace('b', '')
+        if(len(binResult) != 8):
+            tempBlock += "0" + binResult
         else:
-            tempBlock += bin(ord(c)).replace('b', '')
+            tempBlock += binResult
 
     return tempBlock
 
@@ -287,14 +287,15 @@ class Application(Frame):
 
                 if(len(message) % 8):
                     message = addPadding(message)
-                
+
                 result = []
                 allText = splitter_8(message)
-                
+
                 for block in allText:
-                    
+
                     block = convertToBits(block)
                     block = permutation(block, InitialPermutationArray)
+
                     blockLeft, blockRight = splitter_32(block)
 
                     for i in range(16):
@@ -304,7 +305,7 @@ class Application(Frame):
                         temp = substitute(temp)
                         temp = permutation(temp, P)
                         temp = xor(blockLeft, temp)
-                        
+
                         blockLeft = blockRight
                         blockRight = temp
 
@@ -330,6 +331,7 @@ class Application(Frame):
                 for block in allText:
                     block = convertToBitArray(block)
                     block = permutation(block, InitialPermutationArray)
+
                     blockLeft, blockRight = splitter_32(block)
 
                     for i in range(16):
@@ -358,7 +360,7 @@ class Application(Frame):
                     decryptOutput["text"] = finalResult
                 else:
                     msb.showinfo(
-                        "Different messages", "Encrypted message and Decrypted message are different!\n\nPlease fill in the empty field and click on Encrypt button!")
+                        "Different messages", "Input message and Decrypted message are different!\n\nInput string had changed, please click on Encrypt button before click on Decrypt button!")
 
                 self.decryptButton['state'] = 'disable'
 
@@ -389,7 +391,7 @@ class Application(Frame):
                                 fill=BOTH, pady=10)
 
         encryptOutput = Label(master=rightSide,
-                              text="Output for encrypt", font=("Helvetica", 16), bg="blue", fg="white")
+                              text="Output for encrypt", font=("Helvetica", 16), bg="blue", fg="white", wraplength=300)
         encryptOutput.pack(side=TOP, expand=True, fill=BOTH, pady=10)
 
 # decrypt
@@ -398,7 +400,7 @@ class Application(Frame):
         self.decryptButton.pack(side=TOP, expand=True, fill=BOTH, pady=10)
 
         decryptOutput = Label(rightSide, text="Output for decrypt",
-                              font=("Helvetica", 16), bg="red", fg="white")
+                              font=("Helvetica", 16), bg="red", fg="white", wraplength=300)
         decryptOutput.pack(side=TOP, expand=True, fill=BOTH, pady=10)
 
 # QUIT
