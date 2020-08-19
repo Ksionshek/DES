@@ -261,11 +261,12 @@ def convertToBits(block):
             tempBlock += "0" + binResult
         else:
             tempBlock += binResult
-
     return tempBlock
 
 
 class Application(Frame):
+
+    messageToEncrypt = ""
 
     def __init__(self, master=None):
         super().__init__(master)
@@ -278,12 +279,14 @@ class Application(Frame):
         def encrypt():
             keyGenerator()
             message = name.get()
+            self.messageToEncrypt = name.get()
 
             if(message == ""):
                 msb.showinfo(
                     "Empty input field", "Please fill in the empty field and click on Encrypt button!")
             else:
                 self.decryptButton['state'] = 'normal'
+                decryptOutput["text"] = "Output for encrypt"
 
                 if(len(message) % 8):
                     message = addPadding(message)
@@ -317,12 +320,13 @@ class Application(Frame):
 
         def decrypt():
 
-            inputMessage = name.get()
             message = encryptOutput["text"]
+            messageCurrentInput = name.get()
 
-            if(inputMessage == ""):
+            if(messageCurrentInput == ""):
                 msb.showinfo(
                     "Empty input field", "Please fill in the empty field and click on Encrypt button!")
+                self.decryptButton['state'] = 'disable'
             else:
                 result = list()
 
@@ -351,16 +355,17 @@ class Application(Frame):
                 finalResult = ''.join([chr(int(y, 2)) for y in [''.join([str(x)
                                                                          for x in _bytes]) for _bytes in splitter_8(result)]])
 
-                inputMessageLen = len(inputMessage) % 8
-                if inputMessageLen != 0:
-                    finalResult = removePadding(
-                        finalResult, 8 - inputMessageLen)
+                messageEncryptedLen = len(self.messageToEncrypt) % 8
 
-                if(inputMessage == finalResult):
+                if messageEncryptedLen != 0:
+                    finalResult = removePadding(
+                        finalResult, 8 - messageEncryptedLen)
+
+                if(self.messageToEncrypt == finalResult and messageCurrentInput == finalResult):
                     decryptOutput["text"] = finalResult
                 else:
                     msb.showinfo(
-                        "Different messages", "Input message and Decrypted message are different!\n\nInput string had changed, please click on Encrypt button before click on Decrypt button!")
+                        "Different messages", "Input message and Encrypted message are different!\n\nInput string had changed, please click on Encrypt button before click on Decrypt button!")
 
                 self.decryptButton['state'] = 'disable'
 
@@ -390,7 +395,7 @@ class Application(Frame):
         self.encryptButton.pack(side=TOP, expand=True,
                                 fill=BOTH, pady=10)
 
-        encryptOutput = Label(master=rightSide,
+        encryptOutput = Label(rightSide,
                               text="Output for encrypt", font=("Helvetica", 16), bg="blue", fg="white", wraplength=300)
         encryptOutput.pack(side=TOP, expand=True, fill=BOTH, pady=10)
 
