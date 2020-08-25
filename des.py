@@ -24,7 +24,6 @@ CP_2 = [
     34, 53, 46, 42, 50, 36, 29, 32
 ]
 
-# Expand matrix to get a 48bits matrix of datas to apply the xor with Ki
 E = [
     32, 1, 2, 3, 4, 5,
     4, 5, 6, 7, 8, 9,
@@ -36,7 +35,6 @@ E = [
     28, 29, 30, 31, 32, 1
 ]
 
-# SBOX
 S_BOX = [
 
     [[14, 4, 13, 1, 2, 15, 11, 8, 3, 10, 6, 12, 5, 9, 0, 7],
@@ -88,7 +86,6 @@ S_BOX = [
      ]
 ]
 
-# Permut made after each SBox substitution for each round
 P = [16, 7, 20, 21, 29, 12, 28, 17,
      1, 15, 23, 26, 5, 18, 31, 10,
      2, 8, 24, 14, 32, 27, 3, 9,
@@ -105,7 +102,6 @@ PI = [
     63, 55, 47, 39, 31, 23, 15, 7
 ]
 
-# Final permut for datas after the 16 rounds
 PI_1 = [40, 8, 48, 16, 56, 24, 64, 32,
         39, 7, 47, 15, 55, 23, 63, 31,
         38, 6, 46, 14, 54, 22, 62, 30,
@@ -115,7 +111,6 @@ PI_1 = [40, 8, 48, 16, 56, 24, 64, 32,
         34, 2, 42, 10, 50, 18, 58, 26,
         33, 1, 41, 9, 49, 17, 57, 25]
 
-# Matrix that determine the shift for each round of keys
 SHIFT = [1, 1, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1]
 
 
@@ -128,47 +123,26 @@ def keyGenerator():
         messagebox.showerror("ERROR", "You have to choose a key!")
         return
     print(label0["text"])
-    #randomLetters = ''.join(random.choice(string.ascii_letters)
-                           # for i in range(8))
-    # print("RandomKey: ")
-    # print(randomKey)
-    #res = ''.join(bin(ord(c)) for c in randomLetters).replace('b', '')
-    #print("RES")
-    #print(res)
-    #randomKey = string_to_bit_array(res)
-    # print(res)
-    # print(len(res))
     permutKey = permut(randomKey, CP_1)
-   # print("PermutKey: ")
-    #print(permutKey)
-    # ================================   generateAndPermutKey()
-    # print(len(keyGenerator))
     splitResL, splitResR = nsplit(permutKey, 28)
-    # print(splitResL)
-    # print('\n')
-    # print(splitResR)
-    
     for i in range(16):
         splitResL, splitResR = shift(splitResL, splitResR, SHIFT[i])
         temp = splitResL + splitResR
         subKeys.append(permut(temp, CP_2))
-    #print("SubKeys: ")
-    #print(subKeys)
-   
-    # for i in range(16):
-    #   print('\n', len(subKeys[i]))
-    # ================================   generateAndPermutKey()
 
 
-def nsplit(s, n):  # Split a list into sublists of size "n"
+
+# dzielenie listy na podlisty o rozmiarze n
+def nsplit(s, n):
     return [s[k:k+n] for k in range(0, len(s), n)]
 
 
-def permut(block, table):  # Permut the given block using the given table (so generic method)
+# permutacja tabeli uzywajac innej tabeli
+def permut(block, table):
     return [block[x-1] for x in table]
 
 
-def shift(g, d, n):  # Shift a list of the given value
+def shift(g, d, n):
     return g[n:] + g[:n], d[n:] + d[:n]
 
 def string_to_bit_array(text):
@@ -184,51 +158,43 @@ def binValue(val, bitsize):
     if len(binval) > bitsize:
         raise "binary value larger than the expected size"
     while len(binval) < bitsize:
-        binval = "0"+binval  # Add as many 0 as needed to get the wanted size
+        binval = "0"+binval
     return binval
 
 
-def bit_array_to_string(array):  # Recreate the string from the bit array
+def bit_array_to_string(array):
     res = ''.join([chr(int(y, 2)) for y in [''.join([str(x)
                                                      for x in _bytes]) for _bytes in nsplit(array, 8)]])
     return res
 
-
-def addPadding(text):  # Add padding to the datas using PKCS5 spec.
+#nadmiarowe bity dodawane dla wyrazów, których dl. nie jest wielokrotnoscia 8
+def addPadding(text):
     pad_len = 8 - (len(text) % 8)
     text += pad_len * chr(pad_len)
     return text
 
-def removePadding(data):#Remove the padding of the plain text (it assume there is padding)
+#usuwa nadmiarowe bity(padding) przy załozeniu, ze ten wystąpił
+def removePadding(data):
     pad_len = ord(data[-1])
     return data[:-pad_len]
 
-def xor(t1, t2):  # Apply a xor and return the resulting list
+#wykonuje xor i zwraca nową liste
+def xor(t1, t2):
     return [x ^ y for x, y in zip(t1, t2)]
 
 
-def substitute(d_e):  # Substitute bytes using SBOX
-    subblocks = nsplit(d_e, 6)  # Split bit array into sublist of 6 bits
+def substitute(d_e):
+    subblocks = nsplit(d_e, 6)
     result = list()
-    for i in range(len(subblocks)):  # For all the sublists
+    for i in range(len(subblocks)):
         block = subblocks[i]
-        # Get the row with the first and last bit
         row = int(str(block[0])+str(block[5]), 2)
-        # Column is the 2,3,4,5th bits
         column = int(''.join([str(x) for x in block[1:][:-1]]), 2)
-        # Take the value in the SBOX appropriated for the round (i)
         val = S_BOX[i][row][column]
-        bin = binValue(val, 4)  # Convert the value to binary
-        result += [int(x) for x in bin]  # And append it to the resulting list
+        bin = binValue(val, 4)
+        result += [int(x) for x in bin]
     return result
     
-def check_key(key):     # in bytes 8 * 8 = 64 bits
-    if len(key) > 8:
-        key = key [:8]
-    if len(key) < 8:
-        print("key is too short")
-        exit()
-    return key
 
 def clicked(value):
     label0["text"] =  value
@@ -263,7 +229,7 @@ label0.pack()
 frame1 = LabelFrame(window, text="Encryption", padx=100, pady=50,bg="#bad7f5")
 frame1.pack(padx=10, pady=10) 
 
-label1 = Label(frame1,text="This is the msg to encrypt:", bg="#529ae3")
+label1 = Label(frame1,text="This is the message to encrypt:", bg="#529ae3")
 label1.grid(column = 0, row = 1, padx=20)
 
 def encrypt():
@@ -274,23 +240,14 @@ def encrypt():
                 message = addPadding(message)
 
             result = list()
-            allText = nsplit(message, 8)
-            for block in allText:
+            Text = nsplit(message, 8)
+            for block in Text:
                 block = string_to_bit_array(block)
                 block = permut(block, PI)
                 blockLeft, blockRight = nsplit(block, 32)
-               # print("BlockLeft: ")
-               # print(blockLeft)
-                #print("\n")
                 for i in range(16):
                     blockRightAftPermE = permut(blockRight, E)
-                 #   print( "{}. BlockRightAfterPermutE:".format(i))
-                  #  print(blockRightAftPermE)
-                   # print("\n")
                     temp = xor(subKeys[i], blockRightAftPermE)
-                    #print("{}. Temp: ".format(i))
-                    #print(temp)
-                    #print("\n")
                     temp = substitute(temp)
                     temp = permut(temp, P)
                     temp = xor(blockLeft, temp)
@@ -320,30 +277,21 @@ def decrypt():
             
             message = encrypt()
             if(message == ""):
-                resDecryp["text"] = "there is no msg"
+                resDecryp["text"] = "there is no message"
                 return
             if(len(message) % 8 != 0):
                 message = addPadding(message)
 
             textPad = 8 - len(message) % 8
             result = list()
-            allText = nsplit(message, 8)
-            for block in allText:
+            Text = nsplit(message, 8)
+            for block in Text:
                 block = string_to_bit_array(block)
                 block = permut(block, PI)
                 blockLeft, blockRight = nsplit(block, 32)
-               # print("BlockLeft: ")
-                #print(blockLeft)
-                #print("\n")
                 for i in range(16):
                     blockRightAftPermE = permut(blockRight, E)
-                 #   print( "{}. BlockRightAfterPermutE:".format(i))
-                  #  print(blockRightAftPermE)
-                   # print("\n")
                     temp = xor(subKeys[15-i], blockRightAftPermE)
-                    #print("{}. Temp: ".format(i))
-                    #print(temp)
-                   # print("\n")
                     temp = substitute(temp)
                     temp = permut(temp, P)
                     temp = xor(blockLeft, temp)
